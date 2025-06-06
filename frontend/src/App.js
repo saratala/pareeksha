@@ -6,7 +6,7 @@ function App() {
   const [stage, setStage] = useState("start");
   const [question, setQuestion] = useState("");
   const [recording, setRecording] = useState(null); // { audioBlob, videoBlob }
-  const [feedback, setFeedback] = useState("");
+  const [feedback, setFeedback] = useState(null);
 
   // Example: static question, can be replaced with LLM call
   const askQuestion = () => {
@@ -16,15 +16,17 @@ function App() {
     setStage("interview");
   };
 
-  // Called after recording is done
+  // Called after recording is done and backend feedback is received
   const handleRecording = (rec) => {
-    setRecording(rec);
-    setStage("feedback");
-  };
-
-  // Called after feedback is received
-  const handleFeedback = (fb) => {
-    setFeedback(fb);
+    // If Interview returns feedback in rec.feedback, set it
+    if (rec && rec.feedback) {
+      setFeedback(rec.feedback);
+      setRecording(rec);
+      setStage("feedback");
+    } else {
+      setRecording(rec);
+      setStage("feedback");
+    }
   };
 
   return (
@@ -49,11 +51,10 @@ function App() {
         <Feedback
           question={question}
           recording={recording}
-          onFeedback={handleFeedback}
           feedback={feedback}
           onRestart={() => {
             setStage("start");
-            setFeedback("");
+            setFeedback(null);
             setRecording(null);
           }}
         />
