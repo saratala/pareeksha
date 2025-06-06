@@ -1,40 +1,42 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
-// Replace this with your actual LLM API call
-async function analyzeWithLLM({ question, videoBlob }) {
-  // For demo: just return a fake response after 2s
-  await new Promise((r) => setTimeout(r, 2000));
-  return (
-    "[AI FEEDBACK] This is a placeholder. " +
-    "You answered: (video/audio submitted).\n" +
-    "Question: " + question +
-    "\nStrengths: ...\nAreas for improvement: ..."
-  );
-}
-
-export default function Feedback({ question, recording, onFeedback, feedback, onRestart }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
+// Feedback component: displays backend AI feedback in a structured, user-friendly way
+export default function Feedback({ question, recording, feedback, onRestart }) {
   const isBlobValid = recording && recording.videoBlob && recording.videoBlob.size > 1000;
   const transcript = (recording && (recording.whisperTranscript || recording.transcript));
 
-  useEffect(() => {
-    if (!feedback && recording) {
-      setLoading(true);
-      analyzeWithLLM({ question, videoBlob: recording.videoBlob })
-        .then((fb) => {
-          onFeedback(fb);
-          setLoading(false);
-        })
-        .catch((e) => {
-          setError("Failed to get feedback: " + e.message);
-          setLoading(false);
-        });
-    }
-    // eslint-disable-next-line
-  }, [recording, feedback]);
+  if (!feedback) {
+    return <div style={{ color: '#888' }}>No feedback available yet.</div>;
+  }
 
+  // If backend sent an error
+  if (feedback.error) {
+    return (
+      <div style={{ color: 'red', background: '#fff1f0', border: '1px solid #ffa39e', padding: 16 }}>
+        <strong>Backend Error:</strong>
+        <pre style={{ whiteSpace: 'pre-wrap' }}>{feedback.error}</pre>
+      </div>
+    );
+  }
+
+  // Render frame analysis if present
+  const renderFrameAnalysis = () => {
+    if (!feedback.frame_analysis || !Array.isArray(feedback.frame_analysis) || feedback.frame_analysis.length === 0) return null;
+    return (
+      <div style={{ marginTop: 12 }}>
+        <strong>Frame Analysis:</strong>
+        <ul>
+          {feedback.frame_analysis.map((frame, idx) => (
+            <li key={idx}>
+              <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{typeof frame === 'object' ? JSON.stringify(frame, null, 2) : String(frame)}</pre>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
+  // Render main feedback/summary
   return (
     <div>
       <h2>AI Feedback</h2>
@@ -55,13 +57,11 @@ export default function Feedback({ question, recording, onFeedback, feedback, on
           No valid recording found. Please try again.
         </div>
       )}
-      {loading && <div>Analyzing your answer...</div>}
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      {feedback && (
-        <div style={{ margin: "1rem 0", padding: 12, background: "#f5f5f5" }}>
-          <pre style={{ whiteSpace: "pre-wrap" }}>{feedback}</pre>
-        </div>
-      )}
+      <div style={{ background: '#e6f7ff', border: '1px solid #91d5ff', padding: 16, marginTop: 16 }}>
+        <h3>AI Feedback</h3>
+        <pre style={{ whiteSpace: 'pre-wrap', fontSize: 15 }}>{feedback.feedback}</pre>
+        {renderFrameAnalysis()}
+      </div>
       <button onClick={onRestart} style={{ marginTop: 16 }}>
         Restart Interview
       </button>

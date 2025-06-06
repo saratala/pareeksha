@@ -2,3 +2,15 @@ fastapi
 uvicorn
 openai-whisper
 torch
+python-multipart
+openai
+
+# For backend video frame extraction
+opencv-python-headless
+ffmpeg-python
+numpy
+pillow
+requests
+
+sqlalchemy
+psycopg2-binary
